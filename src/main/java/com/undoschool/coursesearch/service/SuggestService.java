@@ -19,7 +19,7 @@ public class SuggestService {
 
     public List<String> suggest(String prefix) {
         try {
-            SearchResponse<CourseDocument> response = elasticsearchClient.search(s -> s
+            SearchResponse<Void> response = elasticsearchClient.search(s -> s
                     .index("courses")
                     .suggest(sg -> sg
                             .suggesters("title-suggest", fs -> fs
@@ -28,7 +28,7 @@ public class SuggestService {
                                             .field("suggest")
                                             .size(10)
                                             .skipDuplicates(true)))),
-                    CourseDocument.class);
+                    Void.class);
 
             return response.suggest().get("title-suggest").stream()
                     .flatMap(s -> s.completion().options().stream())
