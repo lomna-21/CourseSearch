@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.*;
+import org.springframework.data.elasticsearch.core.suggest.Completion;
 
 @Data
 @NoArgsConstructor
@@ -14,6 +15,9 @@ public class CourseDocument {
 
     @Id
     private String id;
+
+    @CompletionField(maxInputLength = 100)
+    private Completion suggest;
 
     @Field(type = FieldType.Text, analyzer = "standard")
     private String title;

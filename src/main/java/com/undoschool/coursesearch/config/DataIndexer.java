@@ -10,6 +10,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.IndexOperations;
+import org.springframework.data.elasticsearch.core.suggest.Completion;
 import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
@@ -26,25 +27,32 @@ public class DataIndexer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        // 1. Delete existing index (clean slate on each startup)
+        // 1. Delete existing index
         IndexOperations indexOps = elasticsearchOperations.indexOps(CourseDocument.class);
         if (indexOps.exists()) {
             indexOps.delete();
             log.info("Deleted existing 'courses' index");
         }
 
-        // 2. Create index with mappings from @Document annotations
+        // 2. Create index and put mapping
         indexOps.create();
         indexOps.putMapping(indexOps.createMapping());
         log.info("Created 'courses' index with mappings");
 
-        // 3. Read sample-courses.json from classpath
+        // 3. Read sample data
         InputStream is = getClass().getResourceAsStream("/sample-courses.json");
         List<CourseDocument> courses = objectMapper.readValue(is,
                 new TypeReference<List<CourseDocument>>() {
                 });
 
-        // 4. Bulk save all documents
+        // 4. Populate the suggest field for autocomplete
+        courses.forEach(c -> {
+            if (c.getTitle() != null) {
+                c.setSuggest(new Completion(new String[] { c.getTitle() }));
+            }
+        });
+
+        // 5. Bulk save
         courseRepository.saveAll(courses);
         log.info("Indexed {} courses into Elasticsearch", courses.size());
     }
